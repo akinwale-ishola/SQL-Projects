@@ -1,0 +1,268 @@
+create or replace PACKAGE BODY STAFF_REWARD_pkg AS
+
+
+FUNCTION UpdateCreditCardInfo( 
+   p_HOMETYPE IN VARCHAR2,
+   p_IDDOCUMENTNUMBER IN VARCHAR2,
+   p_IDDOCUMENTPLACEOFISSUE IN VARCHAR2,
+   p_IDDOCUMENTDATEOFISSUE IN VARCHAR2,
+   p_IDDOCUMENTEXPIRYDATE IN VARCHAR2,
+   p_FAVSPORT IN VARCHAR2,
+   p_FAVSPORTTEAM IN VARCHAR2,
+   p_FAVNEWSMEDIA IN VARCHAR2,
+   p_FAVSOCIALMEDIA IN VARCHAR2,
+   p_REFEREENAME IN VARCHAR2,
+   p_REFEREEPHONE IN VARCHAR2,
+   p_PREFERREDCARDNAME IN VARCHAR2,
+   p_SECURITYQUESTION IN VARCHAR2,
+   p_SECURITYANSWER IN VARCHAR2,
+   p_WORKFLOW_ID_NAME IN VARCHAR2
+   )
+
+RETURN VARCHAR2 as
+    V_COUNT       INTEGER;
+      V_RETURN VARCHAR2(3000);
+      p_USERNAME VARCHAR2(300);
+       v_response    varchar2(50);
+       v_err_message varchar(500);
+  begin
+     
+       update FCUBSLIVE.STR_WORKITEMS
+  set HOMETYPE = p_HOMETYPE,
+  IDDOCUMENTNUMBER = p_IDDOCUMENTNUMBER,
+  IDDOCUMENTPLACEOFISSUE = p_IDDOCUMENTPLACEOFISSUE,
+  IDDOCUMENTDATEOFISSUE = p_IDDOCUMENTDATEOFISSUE,
+  IDDOCUMENTEXPIRYDATE = p_IDDOCUMENTEXPIRYDATE,
+  FAVSPORT = p_FAVSPORT,
+  FAVSPORTTEAM = p_FAVSPORTTEAM,
+  FAVNEWSMEDIA = p_FAVNEWSMEDIA,
+  FAVSOCIALMEDIA = p_FAVSOCIALMEDIA,
+  REFEREENAME = p_REFEREENAME,
+  REFEREEPHONE = p_REFEREEPHONE,
+  PREFERREDCARDNAME = p_PREFERREDCARDNAME,
+  SECURITYQUESTION = p_SECURITYQUESTION,
+  SECURITYANSWER = p_SECURITYANSWER
+  where NAME = p_WORKFLOW_ID_NAME;
+
+    v_response := 'SUCCESS';
+    commit;
+       return v_response;
+  EXCEPTION
+    WHEN OTHERS THEN
+     
+      ROLLBACK;
+      v_err_message := SQLERRM;
+     v_response := 'DB ERROR:'||v_err_message;
+      --logerror(DBMS_UTILITY.format_error_backtrace || v_err_message,
+            --   'cib_ibank_sr_pkg.changePassword');
+    
+      --COMMIT;
+      RETURN v_response;
+  END;
+  
+  FUNCTION UPDATEAccountOpening( p_ACCT_BALANCE IN VARCHAR2, p_DEPENDANT_NAME IN VARCHAR2, p_DEPENDANT_ACCTNO IN VARCHAR2, p_UIDS IN VARCHAR2, p_STAFFID IN VARCHAR2,p_DEPENDANT_CUSTID IN VARCHAR2,p_ACCOUNTNO IN VARCHAR2,p_ISACCT_CREDITED IN VARCHAR2,p_ISLIEN_PLACED IN VARCHAR2) RETURN VARCHAR2 as
+    V_COUNT       INTEGER;
+      V_RETURN VARCHAR2(3000);
+      p_USERNAME VARCHAR2(300);
+       v_response    varchar2(50);
+       v_err_message varchar(500);
+  begin
+    SELECT CUSTOMERNUMBER INTO p_USERNAME FROM CUSTOMERS WHERE UIDS=p_UIDS;
+   
+   INSERT
+    INTO STAFF_REWARD
+      (
+        ACCT_BALANCE ,
+        DEPENDANT_NAME ,
+        DEPENDANT_ACCTNO ,
+        USERNAME ,
+        STAFFID ,
+        RECORDID ,
+        DEPENDANT_CUSTID ,
+        ACCOUNTNO ,ISACCT_CREDITED,ISLIEN_PLACED,UIDS
+       
+      )
+      VALUES
+      (
+        p_ACCT_BALANCE ,
+        p_DEPENDANT_NAME ,
+        p_DEPENDANT_ACCTNO ,
+        p_USERNAME ,
+        p_STAFFID ,
+        STAFF_REWARD_SEQ.NEXTVAL ,
+        p_DEPENDANT_CUSTID ,
+        p_ACCOUNTNO ,p_ISACCT_CREDITED,p_ISLIEN_PLACED,p_UIDS
+      
+      );
+      select count(1) into V_COUNT  from CUSTOMER_ACCOUNTS where UIDS=p_UIDS and ACCOUNTNUMBER=p_DEPENDANT_ACCTNO;
+      if(V_COUNT=0) then
+              INSERT
+    INTO CUSTOMER_ACCOUNTS
+      (
+        UIDS ,
+        ACCOUNTNUMBER ,
+        --ACCOUNTYPE ,
+        ACCOUNTCURRENCY ,
+        ACCOUNTNAME ,
+        DATECREATED ,
+        MAKER ,
+        CHECKER,
+        DATEAUTHORISED,
+        ACCOUNTSTATUS,
+        ACCRIGHT
+       
+      )
+      VALUES
+      (
+        p_UIDS,
+        p_DEPENDANT_ACCTNO ,
+        'NGN' ,
+        p_DEPENDANT_NAME ,
+        SYSDATE ,
+        'SYSTEM' ,
+        'SYSTEM',
+        SYSDATE,
+        'Authorised',
+        'transfer'
+      
+      );
+      end if;
+    v_response := 'SUCCESS';
+    commit;
+       return v_response;
+  EXCEPTION
+    WHEN OTHERS THEN
+     
+      ROLLBACK;
+      v_err_message := SQLERRM;
+     v_response := 'DB ERROR:'||v_err_message;
+      --logerror(DBMS_UTILITY.format_error_backtrace || v_err_message,
+            --   'cib_ibank_sr_pkg.changePassword');
+    
+      --COMMIT;
+      RETURN v_response;
+  END;
+      
+  FUNCTION FetchReward( p_acct IN VARCHAR2) RETURN VARCHAR2 IS
+      O_REFCURSOR SYS_REFCURSOR;
+      V_COUNT       INTEGER;
+      V_RETURN VARCHAR2(3000);
+        BEGIN
+        
+        select count(1) into V_COUNT from STAFF_REWARD where USERNAME=p_acct and status='NEW';
+        IF(V_COUNT>0) THEN
+        SELECT '00'||'~~'||DEPENDANT_NAME|| '~~'||DEPENDANT_ACCTNO||'~~'|| RECORDID||'~~'||ACCT_BALANCE||'~~'||ACCOUNTNO  INTO V_RETURN FROM STAFF_REWARD where USERNAME=p_acct and status='NEW' AND ROWNUM<2;
+        ELSE
+        V_RETURN :='99~~ERROR';
+        END IF;
+         
+          RETURN V_RETURN;
+    END FetchReward;
+    
+    FUNCTION UPDATEReward( p_ID IN VARCHAR2, p_status IN VARCHAR2 ) 
+      RETURN VARCHAR2 AS 
+       V_acct VARCHAR2(3000);
+        V_uids VARCHAR2(3000);
+      BEGIN
+       UPDATE STAFF_REWARD 
+       SET  STATUS = p_status,ACCEPTANCE_DATE=SYSDATE
+     WHERE RECORDID = p_ID;
+     
+      if(p_status='REJECT') then
+            select UIDS,DEPENDANT_ACCTNO INTO V_uids,V_acct FROM STAFF_REWARD WHERE RECORDID=p_ID;
+            
+            UPDATE CUSTOMER_ACCOUNTS SET ACCOUNTSTATUS='deleted' WHERE UIDS=V_uids AND ACCOUNTNUMBER=V_acct;
+            end if;
+       COMMIT;
+      RETURN '00~~Success';
+        EXCEPTION
+          WHEN OTHERS THEN
+            RETURN '99~~Error';
+    END UPDATEReward;
+  
+FUNCTION SAVE_STAFF_EMERGENCY_REQ(
+p_CREATED_BY IN VARCHAR2,
+        p_STATUS IN VARCHAR2,
+        p_CHANNEL IN VARCHAR2,
+        
+        p_SMS_CONTENT IN VARCHAR2,
+       p_STAFF_NAME IN VARCHAR2,
+
+        p_STAFF_EMAIL IN VARCHAR2,
+        p_MESSAGE_CONTENT IN VARCHAR2,p_MESSAGE_SUBJECT IN VARCHAR2,p_MESSAGE_CATEGORY IN VARCHAR2,p_STAFF_NUMBER IN VARCHAR2,p_STAFF_MOBILE IN VARCHAR2,p_STAFF_BRANCH_CODE IN VARCHAR2
+        ) RETURN VARCHAR2
+IS
+PRAGMA AUTONOMOUS_TRANSACTION;
+V_RESPONSE VARCHAR2(300);
+BEGIN
+
+  INSERT
+    INTO STAFF_EMERGENCY_RESPONSE_LOG
+      (
+        CREATED_BY ,
+        STATUS ,
+        CHANNEL ,
+        CREATED_DATE,
+        SMS_CONTENT ,
+        STAFF_NAME ,
+        REQUESTID,
+        STAFF_EMAIL ,
+        MESSAGE_CONTENT,
+        MESSAGE_SUBJECT,
+        MESSAGE_CATEGORY,
+        STAFF_NUMBER,
+        STAFF_MOBILE,
+        STAFF_BRANCH_CODE
+      )
+      VALUES
+      (
+        p_CREATED_BY ,
+        p_STATUS ,
+        p_CHANNEL ,
+        SYSDATE ,
+        p_SMS_CONTENT ,
+        p_STAFF_NAME ,
+        STAFF_EMERGENCY_REQ_SEQ.NEXTVAL,
+        p_STAFF_EMAIL ,
+        p_MESSAGE_CONTENT,
+        p_MESSAGE_SUBJECT,
+        p_MESSAGE_CATEGORY,
+        p_STAFF_NUMBER,
+        p_STAFF_MOBILE,
+        p_STAFF_BRANCH_CODE);
+
+    COMMIT;
+    V_RESPONSE:='00~~SUCCESSFULLY SAVED';
+    RETURN V_RESPONSE;
+EXCEPTION
+WHEN DUP_VAL_ON_INDEX THEN
+---ROLLBACK;
+V_RESPONSE:='ALREADY_EXISTS~~ACCOUNT ALREADY EXIST';
+ BEGIN
+      INSERT INTO RIB_SR_ERROR_LOG
+        (error_date, error_msg, error_point)
+      VALUES
+        (SYSDATE,
+         V_RESPONSE||DBMS_UTILITY.format_error_backtrace,
+         'NEWIBANK.STAFF_EMERGENCY_RESPONSE_LOG');
+      COMMIT;
+       RETURN V_RESPONSE;
+ END;
+WHEN OTHERS THEN
+--ROLLBACK;
+V_RESPONSE:='OTHER_EXCEPTION~~EXCEPTION OCCURED';
+BEGIN
+      INSERT INTO RIB_SR_ERROR_LOG
+        (error_date, error_msg, error_point)
+      VALUES
+        (SYSDATE,
+         V_RESPONSE||DBMS_UTILITY.format_error_backtrace,
+         'NEWIBANK.STAFF_EMERGENCY_RESPONSE_LOG');
+      COMMIT;
+       RETURN V_RESPONSE;
+ END;
+END SAVE_STAFF_EMERGENCY_REQ;
+
+ 
+
+END STAFF_REWARD_pkg;

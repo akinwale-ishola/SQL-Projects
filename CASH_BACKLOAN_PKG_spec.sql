@@ -1,0 +1,87 @@
+create or replace PACKAGE CASH_BACKLOAN_PKG
+IS
+  FUNCTION saveLoanRequest(
+      P_APPLICATION_NUMBER    IN VARCHAR2,
+      P_PRODUCT_CODE          IN VARCHAR2,
+      P_TENOR                 IN VARCHAR2,
+      P_AMOUNT                IN VARCHAR2,
+      P_ACCOUNT_NUMBER        IN VARCHAR2,
+      P_HANDLING_CHARGE       IN VARCHAR2,
+      P_INSURANCE_FEE         IN VARCHAR2,
+      P_INSURANCE_RENEWAL_FEE IN VARCHAR2,
+      P_INTEREST_RATE         IN VARCHAR2,
+      P_CHANNEL               IN VARCHAR2,
+      P_REQUEST_OBJECT        IN VARCHAR2 )
+    RETURN VARCHAR2;
+  FUNCTION updateLoanRequest(
+      P_ID              IN VARCHAR2,
+      P_RESPONSE_OBJECT IN VARCHAR2 )
+    RETURN VARCHAR2;
+  FUNCTION creditBureauCheckRequest(
+      P_USERID           IN VARCHAR2,
+      P_BUREAUIDS        IN VARCHAR2,
+      P_BVN              IN VARCHAR2,
+      P_IPADDRESS        IN VARCHAR2,
+      P_DEBITACCOUNTNO   IN VARCHAR2,
+      P_PAYMENTREFERENCE IN VARCHAR2,
+      P_REQUEST_OBJECT   IN VARCHAR2 )
+    RETURN VARCHAR2;
+  FUNCTION updateCreditBureauCheckRequest(
+      P_ID              IN VARCHAR2,
+      P_RESPONSE_OBJECT IN VARCHAR2 )
+    RETURN VARCHAR2;
+  FUNCTION getTenors
+    RETURN SYS_REFCURSOR;
+  FUNCTION getRepaymentTypes
+    RETURN SYS_REFCURSOR;
+  FUNCTION saveCashLoanRequest(
+      P_USERID          IN VARCHAR2,
+      P_IPADDRESS       IN VARCHAR2,
+      P_ACCOUNT_NUMBER  IN VARCHAR2,
+      P_AMOUNT          IN VARCHAR2,
+      P_TENOR           IN VARCHAR2,
+      P_RATE            IN VARCHAR2,
+      P_CHANNEL         IN VARCHAR2,
+      P_PRIMARY_ACCOUNT IN VARCHAR2)
+    RETURN VARCHAR2;
+  FUNCTION updateCtBurueaRespCRSERVICES(
+      P_ID                          IN VARCHAR2,
+      P_PAYMENT_REF_CRSERVICES      IN VARCHAR2,
+      P_GOOD_CT_STATUS_CRSERVICES   IN VARCHAR2,
+      P_DATE_GOOD_CRT_ST_CRSERVICES IN VARCHAR2 )
+    RETURN VARCHAR2;
+  FUNCTION updateCrmsNumber(
+      P_ID                    IN VARCHAR2,
+      P_CRMS_NUMBER           IN VARCHAR2,
+      P_CRMS_RESPONSE_CODE    IN VARCHAR2,
+      P_CRMS_RESPONSE_MESSAGE IN VARCHAR2 )
+    RETURN VARCHAR2;
+  FUNCTION updateLoanAccountNumber(
+      P_ID                    IN VARCHAR2,
+      P_LOAN_ACCOUNT_NUMBER   IN VARCHAR2,
+      P_LOAN_RESPONSE_CODE    IN VARCHAR2,
+      P_LOAN_RESPONSE_MESSAGE IN VARCHAR2 )
+    RETURN VARCHAR2;
+  FUNCTION updateCtBurueaRespXDS(
+      P_ID                       IN VARCHAR2,
+      P_PAYMENT_REF_XDS          IN VARCHAR2,
+      P_GOOD_CREDIT_STATUS_XDS   IN VARCHAR2,
+      P_DATE_GOOD_CRT_STATUS_XDS IN VARCHAR2 )
+    RETURN VARCHAR2;
+  PROCEDURE getCustomerBVN(
+      paccountNumber IN VARCHAR2,
+      pBVNNumber OUT VARCHAR2);
+  PROCEDURE getPrimaryAccount(
+      pTspAccount IN VARCHAR2,
+      pPrimartAccount OUT VARCHAR2) ;
+  FUNCTION GETTSPACCOUNTLIST(
+      I_CUSTOMERNUMBER IN VARCHAR2,
+      I_ACCOUNTNUMBER  IN VARCHAR2 )
+    RETURN SYS_REFCURSOR ;
+  PROCEDURE getEmailAddress(
+      pCustomerNumber IN VARCHAR2,
+      pEmailAddress OUT VARCHAR2) ;
+  PROCEDURE getCustomerName(
+      pCustomerNumber IN VARCHAR2,
+      pCustomerName OUT VARCHAR2);
+  END CASH_BACKLOAN_PKG;
